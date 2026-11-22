@@ -29,7 +29,8 @@ recv = '''<receiver android:exported="false" android:name="com.dexterous.flutter
         </receiver>
     '''
 s = s.replace('</application>', recv + '</application>', 1)
-s = s.replace('android:label="c4_schedule"', 'android:label="جدول C4"')
+import re
+s = re.sub(r'android:label="[^"]*"', 'android:label="جدول B3"', s, count=1)
 open(p, 'w', encoding='utf-8').write(s)
 
 # 2) تفعيل desugaring اللي مكتبة الإشعارات محتاجاها

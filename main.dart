@@ -21,23 +21,23 @@ class Item {
       this.person, this.room, this.lecture);
 }
 
-// مواعيد C4 فقط (الوقت بنظام 24 ساعة)
+// مواعيد B3 فقط (الوقت بنظام 24 ساعة)
 const List<Item> items = [
   // السبت
-  Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'م. مورا', 'AI111', false),
-  Item(6, 13, 0, 15, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
-  Item(6, 15, 0, 16, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
-  Item(6, 16, 0, 17, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+  Item(6, 9, 0, 10, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+  Item(6, 10, 0, 11, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+  Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+  Item(6, 13, 0, 15, 0, 'Electronics I', 'م. شهد محمد', 'AI110', false),
   // الأحد
-  Item(7, 13, 0, 15, 0, 'English', 'د. منة', 'AI101', true),
-  Item(7, 15, 0, 17, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+  Item(7, 9, 0, 11, 0, 'Computer Fundamentals', 'م. مورا', 'AI112', false),
+  Item(7, 11, 0, 13, 0, 'English', 'د. منة', 'AI101', true),
+  Item(7, 13, 0, 15, 0, 'Math 0', 'م. رنا', 'AI110', false),
   // الاثنين
-  Item(1, 9, 0, 11, 0, 'Math 0', 'م. مورا', 'AI304', false),
-  Item(1, 11, 0, 13, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+  Item(1, 9, 0, 11, 0, 'Pure Math', 'م. هالة', 'AI207', false),
+  Item(1, 15, 0, 17, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
   // الثلاثاء
-  Item(2, 11, 0, 13, 0, 'Electronics I', 'م. هبة ممدوح', 'B303', false),
-  Item(2, 13, 0, 15, 0, 'Math 0', 'د. باسم', 'AI101', true),
-  Item(2, 15, 0, 17, 0, 'Pure Math', 'م. مونيكا', 'AI110', false),
+  Item(2, 9, 0, 11, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+  Item(2, 11, 0, 13, 0, 'Math 0', 'د. باسم', 'AI102', true),
 ];
 
 const List<int> dayOrder = [6, 7, 1, 2];
@@ -185,7 +185,7 @@ Future<void> scheduleAll() async {
 }
 
 Future<void> testNotification() async {
-  const body = 'د. نبيل • القاعة AI101 • 1:00 م';
+  const body = 'د. نبيل • القاعة AI101 • 11:00 ص';
   await plugin.show(
       999, 'تجربة: محاضرة بعد 5 دقايق', body, buildDetails(body));
 }
@@ -239,7 +239,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'جدول C4',
+      title: 'جدول B3',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: kNavy),
       builder: (context, child) =>
           Directionality(textDirection: TextDirection.rtl, child: child!),
@@ -318,7 +318,7 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('جدول C4',
+            const Text('جدول B3',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 40,
