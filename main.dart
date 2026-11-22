@@ -21,25 +21,222 @@ class Item {
       this.person, this.room, this.lecture);
 }
 
-// مواعيد B3 فقط (الوقت بنظام 24 ساعة)
-const List<Item> items = [
-  // السبت
-  Item(6, 9, 0, 10, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
-  Item(6, 10, 0, 11, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
-  Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
-  Item(6, 13, 0, 15, 0, 'Electronics I', 'م. شهد محمد', 'AI110', false),
-  // الأحد
-  Item(7, 9, 0, 11, 0, 'Computer Fundamentals', 'م. مورا', 'AI112', false),
-  Item(7, 11, 0, 13, 0, 'English', 'د. منة', 'AI101', true),
-  Item(7, 13, 0, 15, 0, 'Math 0', 'م. رنا', 'AI110', false),
-  // الاثنين
-  Item(1, 9, 0, 11, 0, 'Pure Math', 'م. هالة', 'AI207', false),
-  Item(1, 15, 0, 17, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
-  // الثلاثاء
-  Item(2, 9, 0, 11, 0, 'Pure Math', 'د. معتز', 'AI102', true),
-  Item(2, 11, 0, 13, 0, 'Math 0', 'د. باسم', 'AI102', true),
-];
+// جدول المستوى الأول كامل: 16 جروب (الوقت بنظام 24 ساعة)
+// الجروبات: A1..A4 / B1..B4 / C1..C4 / D1..D4
+const Map<String, List<Item>> allSchedules = {
+  'A1': [
+    Item(6, 9, 0, 11, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 11, 0, 12, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 12, 0, 13, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 13, 0, 15, 0, 'Math 0', 'م. فاطمة', 'AI413', false),
+    Item(7, 9, 0, 11, 0, 'Computer Fundamentals', 'م. آلاء حمادة', 'AI107', false),
+    Item(1, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(1, 11, 0, 13, 0, 'Pure Math', 'م. خالد', 'AI303', false),
+    Item(1, 13, 0, 15, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(2, 9, 0, 11, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+    Item(2, 15, 0, 17, 0, 'Electronics I', 'م. هبة ممدوح', 'AI303', false),
+  ],
+  'A2': [
+    Item(6, 9, 0, 11, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 11, 0, 12, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 12, 0, 13, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 15, 0, 17, 0, 'Computer Fundamentals', 'م. سارة حيدر', 'AI111', false),
+    Item(7, 9, 0, 11, 0, 'Pure Math', 'م. هالة', 'AI207', false),
+    Item(7, 11, 0, 13, 0, 'Electronics I', 'م. محمد حسام', 'AI110', false),
+    Item(1, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(1, 13, 0, 15, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(2, 9, 0, 11, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+    Item(2, 13, 0, 15, 0, 'Math 0', 'م. أحمد', 'AI110', false),
+  ],
+  'A3': [
+    Item(6, 9, 0, 11, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 11, 0, 12, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 12, 0, 13, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 13, 0, 15, 0, 'Math 0', 'م. أحمد', 'AI207', false),
+    Item(7, 9, 0, 11, 0, 'Pure Math', 'م. خالد', 'AI205', false),
+    Item(7, 11, 0, 13, 0, 'Computer Fundamentals', 'م. مورا', 'AI112', false),
+    Item(7, 13, 0, 15, 0, 'Electronics I', 'م. إنجي', 'AI413', false),
+    Item(1, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(1, 13, 0, 15, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(2, 9, 0, 11, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+  ],
+  'A4': [
+    Item(6, 9, 0, 11, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 11, 0, 12, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 12, 0, 13, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(7, 9, 0, 11, 0, 'Computer Fundamentals', 'م. شهد محمد', 'AI302', false),
+    Item(7, 13, 0, 15, 0, 'Electronics I', 'م. وفاء', 'AI304', false),
+    Item(1, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(1, 11, 0, 13, 0, 'Math 0', 'م. فاطمة', 'B303', false),
+    Item(1, 13, 0, 15, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(2, 9, 0, 11, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+    Item(2, 13, 0, 15, 0, 'Pure Math', 'م. هالة', 'AI413', false),
+  ],
+  'B1': [
+    Item(6, 9, 0, 10, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 10, 0, 11, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(7, 9, 0, 11, 0, 'Math 0', 'م. فاطمة', 'AI110', false),
+    Item(7, 11, 0, 13, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 13, 0, 15, 0, 'Pure Math', 'م. شهد إبراهيم', 'AI205', false),
+    Item(1, 9, 0, 11, 0, 'Computer Fundamentals', 'م. آلاء حمادة', 'AI107', false),
+    Item(1, 11, 0, 13, 0, 'Electronics I', 'م. محمد حسام', 'AI110', false),
+    Item(1, 15, 0, 17, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(2, 9, 0, 11, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(2, 11, 0, 13, 0, 'Math 0', 'د. باسم', 'AI102', true),
+  ],
+  'B2': [
+    Item(6, 9, 0, 10, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 10, 0, 11, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(7, 9, 0, 11, 0, 'Math 0', 'م. وفاء', 'AI304', false),
+    Item(7, 11, 0, 13, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 15, 0, 17, 0, 'Electronics I', 'م. وفاء', 'AI304', false),
+    Item(1, 9, 0, 11, 0, 'Computer Fundamentals', 'م. سارة حيدر', 'AI111', false),
+    Item(1, 11, 0, 13, 0, 'Pure Math', 'م. مونيكا', 'B304', false),
+    Item(1, 15, 0, 17, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(2, 9, 0, 11, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(2, 11, 0, 13, 0, 'Math 0', 'د. باسم', 'AI102', true),
+  ],
+  'B3': [
+    Item(6, 9, 0, 10, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 10, 0, 11, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 13, 0, 15, 0, 'Electronics I', 'م. شهد محمد', 'AI110', false),
+    Item(7, 9, 0, 11, 0, 'Computer Fundamentals', 'م. مورا', 'AI112', false),
+    Item(7, 11, 0, 13, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 13, 0, 15, 0, 'Math 0', 'م. رنا', 'AI110', false),
+    Item(1, 9, 0, 11, 0, 'Pure Math', 'م. هالة', 'AI207', false),
+    Item(1, 15, 0, 17, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(2, 9, 0, 11, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(2, 11, 0, 13, 0, 'Math 0', 'د. باسم', 'AI102', true),
+  ],
+  'B4': [
+    Item(6, 9, 0, 10, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 10, 0, 11, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 13, 0, 15, 0, 'Pure Math', 'م. مونيكا', 'AI205', false),
+    Item(7, 9, 0, 11, 0, 'Computer Fundamentals', 'م. سارة حيدر', 'AI111', false),
+    Item(7, 11, 0, 13, 0, 'English', 'د. منة', 'AI101', true),
+    Item(1, 9, 0, 11, 0, 'Math 0', 'م. أحمد', 'AI205', false),
+    Item(1, 13, 0, 15, 0, 'Electronics I', 'م. محمد حسام', 'AI207', false),
+    Item(1, 15, 0, 17, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(2, 9, 0, 11, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(2, 11, 0, 13, 0, 'Math 0', 'د. باسم', 'AI102', true),
+  ],
+  'C1': [
+    Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'م. آلاء حمادة', 'AI107', false),
+    Item(6, 13, 0, 15, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 15, 0, 16, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 16, 0, 17, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(7, 11, 0, 13, 0, 'Electronics I', 'م. إنجي', 'AI413', false),
+    Item(7, 13, 0, 15, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 15, 0, 17, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+    Item(1, 9, 0, 11, 0, 'Math 0', 'م. رنا', 'AI110', false),
+    Item(1, 11, 0, 13, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(2, 13, 0, 15, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 15, 0, 17, 0, 'Pure Math', 'م. هالة', 'AI413', false),
+  ],
+  'C2': [
+    Item(6, 11, 0, 13, 0, 'Electronics I', 'م. وفاء', 'AI304', false),
+    Item(6, 13, 0, 15, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 15, 0, 16, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 16, 0, 17, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(7, 11, 0, 13, 0, 'Pure Math', 'م. شهد إبراهيم', 'AI205', false),
+    Item(7, 13, 0, 15, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 15, 0, 17, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+    Item(1, 9, 0, 11, 0, 'Computer Fundamentals', 'م. شهد محمد', 'AI112', false),
+    Item(1, 11, 0, 13, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(2, 13, 0, 15, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 15, 0, 17, 0, 'Math 0', 'م. وفاء', 'AI304', false),
+  ],
+  'C3': [
+    Item(6, 13, 0, 15, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 15, 0, 16, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 16, 0, 17, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(7, 13, 0, 15, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 15, 0, 17, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+    Item(1, 9, 0, 11, 0, 'Computer Fundamentals', 'م. منار', 'AI305', false),
+    Item(1, 11, 0, 13, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(1, 13, 0, 15, 0, 'Pure Math', 'م. شهد إبراهيم', 'AI205', false),
+    Item(2, 11, 0, 13, 0, 'Math 0', 'م. وفاء', 'AI304', false),
+    Item(2, 13, 0, 15, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 15, 0, 17, 0, 'Electronics I', 'م. شهد محمد', 'AI207', false),
+  ],
+  'C4': [
+    Item(6, 11, 0, 13, 0, 'Computer Fundamentals', 'م. مورا', 'AI111', false),
+    Item(6, 13, 0, 15, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(6, 15, 0, 16, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 16, 0, 17, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(7, 13, 0, 15, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 15, 0, 17, 0, 'Pure Math', 'د. معتز', 'AI101', true),
+    Item(1, 9, 0, 11, 0, 'Math 0', 'م. مورا', 'AI304', false),
+    Item(1, 11, 0, 13, 0, 'Electronics I', 'د. علاء فرح', 'AI101', true),
+    Item(2, 11, 0, 13, 0, 'Electronics I', 'م. هبة ممدوح', 'B303', false),
+    Item(2, 13, 0, 15, 0, 'Math 0', 'د. باسم', 'AI101', true),
+    Item(2, 15, 0, 17, 0, 'Pure Math', 'م. مونيكا', 'AI110', false),
+  ],
+  'D1': [
+    Item(6, 13, 0, 14, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 14, 0, 15, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 15, 0, 17, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(7, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 13, 0, 15, 0, 'Computer Fundamentals', 'م. آلاء حمادة', 'AI107', false),
+    Item(7, 15, 0, 17, 0, 'Electronics I', 'م. شهد محمد', 'AI110', false),
+    Item(1, 9, 0, 11, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(1, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(1, 13, 0, 15, 0, 'Pure Math', 'م. خالد', 'B304', false),
+    Item(2, 13, 0, 15, 0, 'Math 0', 'م. وفاء', 'AI304', false),
+    Item(2, 15, 0, 17, 0, 'Math 0', 'د. باسم', 'AI101', true),
+  ],
+  'D2': [
+    Item(6, 11, 0, 13, 0, 'Pure Math', 'م. شهد إبراهيم', 'AI205', false),
+    Item(6, 13, 0, 14, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 14, 0, 15, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 15, 0, 17, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(7, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 13, 0, 15, 0, 'Computer Fundamentals', 'م. سارة حيدر', 'AI111', false),
+    Item(7, 15, 0, 17, 0, 'Math 0', 'م. فاطمة', 'AI207', false),
+    Item(1, 9, 0, 11, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(1, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(2, 13, 0, 15, 0, 'Electronics I', 'م. هبة ممدوح', 'AI303', false),
+    Item(2, 15, 0, 17, 0, 'Math 0', 'د. باسم', 'AI101', true),
+  ],
+  'D3': [
+    Item(6, 9, 0, 11, 0, 'Computer Fundamentals', 'م. آلاء حمادة', 'AI107', false),
+    Item(6, 13, 0, 14, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 14, 0, 15, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 15, 0, 17, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(7, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 11, 0, 13, 0, 'Pure Math', 'م. هالة', 'AI207', false),
+    Item(7, 15, 0, 17, 0, 'Electronics I', 'م. شهد إبراهيم', 'AI205', false),
+    Item(1, 9, 0, 11, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(1, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(1, 13, 0, 15, 0, 'Math 0', 'م. أحمد', 'AI303', false),
+    Item(2, 15, 0, 17, 0, 'Math 0', 'د. باسم', 'AI101', true),
+  ],
+  'D4': [
+    Item(6, 11, 0, 13, 0, 'Math 0', 'م. أحمد', 'AI207', false),
+    Item(6, 13, 0, 14, 0, 'Information Technology', 'د. لؤى', 'AI102', true),
+    Item(6, 14, 0, 15, 0, 'Problem Solving', 'د. ظافر', 'AI102', true),
+    Item(6, 15, 0, 17, 0, 'Computer Fundamentals', 'د. نبيل', 'AI101', true),
+    Item(7, 9, 0, 11, 0, 'English', 'د. منة', 'AI101', true),
+    Item(7, 11, 0, 13, 0, 'Electronics I', 'م. هبة ممدوح', 'B303', false),
+    Item(7, 15, 0, 17, 0, 'Computer Fundamentals', 'م. مورا', 'AI112', false),
+    Item(1, 9, 0, 11, 0, 'Electronics I', 'د. علاء فرح', 'AI102', true),
+    Item(1, 11, 0, 13, 0, 'Pure Math', 'د. معتز', 'AI102', true),
+    Item(1, 13, 0, 15, 0, 'Pure Math', 'م. مونيكا', 'AI110', false),
+    Item(2, 15, 0, 17, 0, 'Math 0', 'د. باسم', 'AI101', true),
+  ],
+};
 
+const List<String> groupLetters = ['A', 'B', 'C', 'D'];
+
+// الأيام بالترتيب اللي في الجدول
 const List<int> dayOrder = [6, 7, 1, 2];
 const Map<int, String> dayNames = {
   6: 'السبت',
@@ -50,31 +247,44 @@ const Map<int, String> dayNames = {
 
 // ---------------- الإعدادات ----------------
 class AppSettings {
+  static String? group; // null = لسه ما اخترتش جروب
   static String? soundUri; // null = الصوت الافتراضي
   static String soundTitle = 'الافتراضي';
+  static bool vibrate = true;
   static bool use24 = false;
-  static int chan = 0; // رقم قناة الإشعارات (بيتغير لما الصوت يتغير)
+  static int chan = 0; // رقم قناة الإشعارات (بيتغير لما الصوت أو الاهتزاز يتغير)
 
   static Future<void> load() async {
     final p = await SharedPreferences.getInstance();
+    group = p.getString('group');
     soundUri = p.getString('soundUri');
     soundTitle = p.getString('soundTitle') ?? 'الافتراضي';
+    vibrate = p.getBool('vibrate') ?? true;
     use24 = p.getBool('use24') ?? false;
     chan = p.getInt('chan') ?? 0;
   }
 
   static Future<void> save() async {
     final p = await SharedPreferences.getInstance();
+    if (group == null) {
+      await p.remove('group');
+    } else {
+      await p.setString('group', group!);
+    }
     if (soundUri == null) {
       await p.remove('soundUri');
     } else {
       await p.setString('soundUri', soundUri!);
     }
     await p.setString('soundTitle', soundTitle);
+    await p.setBool('vibrate', vibrate);
     await p.setBool('use24', use24);
     await p.setInt('chan', chan);
   }
 }
+
+// مواعيد الجروب اللي المستخدم اختاره
+List<Item> get items => allSchedules[AppSettings.group] ?? const <Item>[];
 
 String fmt(int h, int m) {
   final mm = m.toString().padLeft(2, '0');
@@ -94,7 +304,10 @@ AndroidFlutterLocalNotificationsPlugin? androidImpl() => plugin
     .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
 
-String channelId() => 'c4_alarm_${AppSettings.chan}';
+String channelId() => 'bua_alarm_${AppSettings.chan}';
+
+Int64List vibrationPattern() =>
+    Int64List.fromList(<int>[0, 900, 450, 900, 450, 900, 450, 900]);
 
 Future<void> initNotifications() async {
   tzdata.initializeTimeZones();
@@ -127,7 +340,8 @@ NotificationDetails buildDetails(String body) {
       playSound: true,
       sound: currentSound(),
       audioAttributesUsage: AudioAttributesUsage.alarm,
-      enableVibration: true,
+      enableVibration: AppSettings.vibrate,
+      vibrationPattern: AppSettings.vibrate ? vibrationPattern() : null,
       additionalFlags: Int32List.fromList(<int>[4]), // الصوت يتكرر لحد ما تقفله
       timeoutAfter: 60000,
       autoCancel: true,
@@ -156,11 +370,13 @@ Future<void> scheduleAll() async {
     importance: Importance.max,
     playSound: true,
     sound: currentSound(),
-    enableVibration: true,
+    enableVibration: AppSettings.vibrate,
+    vibrationPattern: AppSettings.vibrate ? vibrationPattern() : null,
     audioAttributesUsage: AudioAttributesUsage.alarm,
   ));
-  for (var i = 0; i < items.length; i++) {
-    final it = items[i];
+  final list = items;
+  for (var i = 0; i < list.length; i++) {
+    final it = list[i];
     final kind = it.lecture ? 'محاضرة' : 'سكشن';
     final title = '$kind ${it.course} بعد 5 دقايق';
     final body = '${it.person} • القاعة ${it.room} • ${fmt(it.sh, it.sm)}';
@@ -185,9 +401,15 @@ Future<void> scheduleAll() async {
 }
 
 Future<void> testNotification() async {
-  const body = 'د. نبيل • القاعة AI101 • 11:00 ص';
-  await plugin.show(
-      999, 'تجربة: محاضرة بعد 5 دقايق', body, buildDetails(body));
+  final list = items;
+  final it = list.isNotEmpty ? list.first : null;
+  final body = it == null
+      ? 'د. نبيل • القاعة AI101 • 9:00 ص'
+      : '${it.person} • القاعة ${it.room} • ${fmt(it.sh, it.sm)}';
+  final title = it == null
+      ? 'تجربة: محاضرة بعد 5 دقايق'
+      : 'تجربة: ${it.course} بعد 5 دقايق';
+  await plugin.show(999, title, body, buildDetails(body));
 }
 
 // ---------------- الواجهة ----------------
@@ -239,11 +461,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'جدول B3',
+      title: 'جدول BUA',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: kNavy),
       builder: (context, child) =>
           Directionality(textDirection: TextDirection.rtl, child: child!),
-      home: const HomePage(),
+      home: AppSettings.group == null
+          ? const GroupPickerPage(first: true)
+          : const HomePage(),
     );
   }
 }
@@ -271,6 +495,128 @@ Widget bottomBar(BuildContext context) {
   );
 }
 
+Widget pageHeader(BuildContext context, String title) {
+  final top = MediaQuery.of(context).padding.top;
+  return Container(
+    height: 80 + top,
+    padding: EdgeInsets.fromLTRB(12, top, 12, 0),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(colors: [kNavyDark, kNavy]),
+      borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+    ),
+    child: Row(
+      children: [
+        if (Navigator.of(context).canPop())
+          const BackButton(color: Colors.white)
+        else
+          const SizedBox(width: 12),
+        const SizedBox(width: 6),
+        Text(title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w800)),
+      ],
+    ),
+  );
+}
+
+// ---------------- اختيار الجروب ----------------
+class GroupPickerPage extends StatefulWidget {
+  final bool first;
+  const GroupPickerPage({super.key, this.first = false});
+  @override
+  State<GroupPickerPage> createState() => _GroupPickerPageState();
+}
+
+class _GroupPickerPageState extends State<GroupPickerPage> {
+  Future<void> _choose(String g) async {
+    AppSettings.group = g;
+    await AppSettings.save();
+    await askPermissions();
+    await scheduleAll();
+    if (!mounted) return;
+    if (widget.first) {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomePage()));
+    } else {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Widget _chip(String g) {
+    final sel = AppSettings.group == g;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _choose(g),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: sel
+                ? const LinearGradient(colors: [kNavyDark, kNavy])
+                : const LinearGradient(
+                    colors: [Colors.white, Color(0xFFE4EBF8)]),
+            boxShadow: [
+              BoxShadow(
+                  color: kNavy.withOpacity(0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Text(g,
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: sel ? Colors.white : kNavyDark)),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: kPageBg,
+        child: Column(
+          children: [
+            pageHeader(context, 'اختار جروبك'),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(12, 18, 12, 24),
+                children: [
+                  for (final l in groupLetters) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
+                      child: Text('مجموعة $l',
+                          style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: kNavy)),
+                    ),
+                    Row(children: [for (var i = 1; i <= 4; i++) _chip('$l$i')]),
+                    const SizedBox(height: 14),
+                  ],
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Text(
+                        'المنبه هيرن قبل كل محاضرة أو سكشن في جروبك بخمس دقايق. تقدر تغيّر الجروب في أي وقت.',
+                        style: TextStyle(color: Colors.black54)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: bottomBar(context),
+    );
+  }
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -287,6 +633,12 @@ class _HomePageState extends State<HomePage> {
   Future<void> _setup() async {
     await askPermissions();
     await scheduleAll();
+  }
+
+  Future<void> _changeGroup() async {
+    final r = await Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const GroupPickerPage()));
+    if (r == true) setState(() {});
   }
 
   Widget _header(BuildContext context) {
@@ -318,13 +670,46 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('جدول B3',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 40,
-                  fontWeight: FontWeight.w900,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
-                )),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('جدول BUA',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+                    )),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: _changeGroup,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: kNavyDark.withOpacity(0.75),
+                      border: Border.all(
+                          color: const Color(0xFF3E6BFF), width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('الجروب: ${AppSettings.group}',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.expand_more,
+                            color: Colors.white, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const Spacer(),
             GestureDetector(
               onTap: () async {
@@ -481,9 +866,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final children = <Widget>[];
+    final list = items;
     for (final d in dayOrder) {
+      final dayItems = list.where((e) => e.day == d).toList();
+      if (dayItems.isEmpty) continue;
       children.add(_dayBar(dayNames[d]!));
-      for (final it in items.where((e) => e.day == d)) {
+      for (final it in dayItems) {
         children.add(_card(it));
       }
     }
@@ -510,27 +898,105 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  static const MethodChannel _ch = MethodChannel('c4/sound');
+  static const MethodChannel _ch = MethodChannel('bua/sound');
 
-  Future<void> _pickSound() async {
+  void _msg(String t) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(t)));
+  }
+
+  Future<void> _applySound(String? uri, String title) async {
+    AppSettings.soundUri = uri;
+    AppSettings.soundTitle = title;
+    AppSettings.chan += 1; // قناة جديدة عشان الصوت الجديد يتطبق
+    await AppSettings.save();
+    await scheduleAll();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _pickNative(String method) async {
     try {
-      final r = await _ch.invokeMethod<Map>('pick', {
+      final r = await _ch.invokeMethod<Map>(method, {
         'current': AppSettings.soundUri,
       });
-      if (r == null) return;
-      AppSettings.soundUri = r['uri'] as String?;
-      AppSettings.soundTitle = (r['title'] as String?) ?? 'الافتراضي';
-      AppSettings.chan += 1; // قناة جديدة عشان الصوت الجديد يتطبق
-      await AppSettings.save();
-      await scheduleAll();
-      if (mounted) setState(() {});
-    } catch (_) {}
+      if (r == null) return; // المستخدم لغى
+      final uri = r['uri'] as String?;
+      final title = (r['title'] as String?) ?? 'صوت مخصص';
+      await _applySound(uri, uri == null ? 'الافتراضي' : title);
+    } catch (_) {
+      _msg('معرفتش أفتح الاختيار، جرب تاني');
+    }
+  }
+
+  Future<void> _soundSheet() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              const Padding(
+                padding: EdgeInsets.all(8),
+                child: Text('صوت المنبه',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.notifications, color: kNavy),
+                title: const Text('الصوت الافتراضي'),
+                onTap: () => Navigator.pop(ctx, 'default'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.music_note, color: kNavy),
+                title: const Text('نغمات الموبايل'),
+                onTap: () => Navigator.pop(ctx, 'ringtone'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.audio_file, color: kNavy),
+                title: const Text('أغنية أو ملف صوت من الموبايل'),
+                subtitle: const Text('اختار أي ملف صوت نازل عندك'),
+                onTap: () => Navigator.pop(ctx, 'file'),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (choice == 'default') {
+      await _applySound(null, 'الافتراضي');
+    } else if (choice == 'ringtone') {
+      await _pickNative('pickRingtone');
+    } else if (choice == 'file') {
+      await _pickNative('pickFile');
+    }
+  }
+
+  Future<void> _setVibrate(bool v) async {
+    AppSettings.vibrate = v;
+    AppSettings.chan += 1; // الاهتزاز بيتحدد في القناة، فلازم قناة جديدة
+    await AppSettings.save();
+    await scheduleAll();
+    if (mounted) setState(() {});
   }
 
   Future<void> _setClock(bool v) async {
     AppSettings.use24 = v;
     await AppSettings.save();
     await scheduleAll(); // الوقت جوه نص الإشعار بيتحدث
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _changeGroup() async {
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const GroupPickerPage()));
     if (mounted) setState(() {});
   }
 
@@ -557,42 +1023,35 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.of(context).padding.top;
     return Scaffold(
       body: Container(
         decoration: kPageBg,
         child: Column(
           children: [
-            Container(
-              height: 80 + top,
-              padding: EdgeInsets.fromLTRB(12, top, 12, 0),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [kNavyDark, kNavy]),
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(30)),
-              ),
-              child: Row(
-                children: const [
-                  BackButton(color: Colors.white),
-                  SizedBox(width: 6),
-                  Text('الإعدادات',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800)),
-                ],
-              ),
-            ),
+            pageHeader(context, 'الإعدادات'),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.only(top: 12),
                 children: [
                   _box(ListTile(
+                    leading: const Icon(Icons.groups, color: kNavy),
+                    title: const Text('الجروب'),
+                    subtitle: Text(AppSettings.group ?? '-'),
+                    trailing: const Icon(Icons.chevron_left),
+                    onTap: _changeGroup,
+                  )),
+                  _box(ListTile(
                     leading: const Icon(Icons.music_note, color: kNavy),
                     title: const Text('صوت المنبه'),
                     subtitle: Text(AppSettings.soundTitle),
                     trailing: const Icon(Icons.chevron_left),
-                    onTap: _pickSound,
+                    onTap: _soundSheet,
+                  )),
+                  _box(SwitchListTile(
+                    secondary: const Icon(Icons.vibration, color: kNavy),
+                    title: const Text('الاهتزاز مع المنبه'),
+                    value: AppSettings.vibrate,
+                    onChanged: _setVibrate,
                   )),
                   _box(ListTile(
                     leading:

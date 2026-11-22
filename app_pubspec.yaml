@@ -1,5 +1,5 @@
-name: b3_schedule
-description: جدول محاضرات B3
+name: bua_schedule
+description: جدول محاضرات BUA (كل الجروبات)
 publish_to: 'none'
 version: 1.0.0+1
 
