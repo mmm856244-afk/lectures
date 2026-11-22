@@ -361,7 +361,15 @@ tz.TZDateTime nextTime(Item it) {
   return d;
 }
 
-Future<void> scheduleAll() async {
+// بنرتب عمليات ضبط المنبهات ورا بعض عشان ما تتخانقش مع بعض
+Future<void> _lastSchedule = Future<void>.value();
+Future<void> scheduleAll() {
+  _lastSchedule =
+      _lastSchedule.catchError((_) {}).then((_) => _scheduleAllNow());
+  return _lastSchedule;
+}
+
+Future<void> _scheduleAllNow() async {
   await plugin.cancelAll();
   await androidImpl()?.createNotificationChannel(AndroidNotificationChannel(
     channelId(),
@@ -530,11 +538,16 @@ class GroupPickerPage extends StatefulWidget {
 }
 
 class _GroupPickerPageState extends State<GroupPickerPage> {
+  bool _busy = false;
+
   Future<void> _choose(String g) async {
-    AppSettings.group = g;
+    if (_busy) return;
+    _busy = true;
+    setState(() => AppSettings.group = g); // العلامة الزرقاء تظهر فورًا
     await AppSettings.save();
-    await askPermissions();
-    await scheduleAll();
+    // ضبط الصلاحيات والمنبهات في الخلفية من غير ما نعلّق الشاشة
+    askPermissions().then((_) => scheduleAll());
+    await Future.delayed(const Duration(milliseconds: 280));
     if (!mounted) return;
     if (widget.first) {
       Navigator.of(context).pushReplacement(
@@ -907,12 +920,13 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _applySound(String? uri, String title) async {
-    AppSettings.soundUri = uri;
-    AppSettings.soundTitle = title;
-    AppSettings.chan += 1; // قناة جديدة عشان الصوت الجديد يتطبق
+    setState(() {
+      AppSettings.soundUri = uri;
+      AppSettings.soundTitle = title;
+      AppSettings.chan += 1; // قناة جديدة عشان الصوت الجديد يتطبق
+    });
     await AppSettings.save();
-    await scheduleAll();
-    if (mounted) setState(() {});
+    scheduleAll();
   }
 
   Future<void> _pickNative(String method) async {
@@ -980,18 +994,18 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _setVibrate(bool v) async {
-    AppSettings.vibrate = v;
-    AppSettings.chan += 1; // الاهتزاز بيتحدد في القناة، فلازم قناة جديدة
+    setState(() {
+      AppSettings.vibrate = v;
+      AppSettings.chan += 1; // الاهتزاز بيتحدد في القناة، فلازم قناة جديدة
+    });
     await AppSettings.save();
-    await scheduleAll();
-    if (mounted) setState(() {});
+    scheduleAll();
   }
 
   Future<void> _setClock(bool v) async {
-    AppSettings.use24 = v;
+    setState(() => AppSettings.use24 = v);
     await AppSettings.save();
-    await scheduleAll(); // الوقت جوه نص الإشعار بيتحدث
-    if (mounted) setState(() {});
+    scheduleAll(); // الوقت جوه نص الإشعار بيتحدث
   }
 
   Future<void> _changeGroup() async {
