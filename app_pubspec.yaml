@@ -1,0 +1,17 @@
+name: c4_schedule
+description: جدول محاضرات C4
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_local_notifications: 17.2.4
+  timezone: 0.9.4
+  shared_preferences: 2.3.3
+
+flutter:
+  uses-material-design: true
