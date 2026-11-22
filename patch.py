@@ -16,6 +16,8 @@ perms = '''<uses-permission android:name="android.permission.POST_NOTIFICATIONS"
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     '''
 s = s.replace('<application', perms + '<application', 1)
 recv = '''<receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"/>
@@ -50,12 +52,19 @@ for name in ['android/app/build.gradle', 'android/app/build.gradle.kts']:
 import glob, re
 KOTLIN = r'''package __PKG__
 
+import android.Manifest
 import android.app.Activity
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
@@ -64,30 +73,37 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val channelName = "bua/sound"
-    private val rcRingtone = 7101
     private val rcFile = 7102
-    private var pending: MethodChannel.Result? = null
+    private val rcPerm = 7103
+    private var pendingFile: MethodChannel.Result? = null
+    private var pendingList: MethodChannel.Result? = null
+    private var player: MediaPlayer? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "pickRingtone" -> {
-                        if (pending != null) { result.error("busy", "busy", null); return@setMethodCallHandler }
-                        pending = result
-                        val i = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
-                        i.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,
-                            RingtoneManager.TYPE_ALARM or RingtoneManager.TYPE_RINGTONE or RingtoneManager.TYPE_NOTIFICATION)
-                        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
-                        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
-                        val cur = call.argument<String>("current")
-                        if (cur != null) i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(cur))
-                        startActivityForResult(i, rcRingtone)
+                    "listSounds" -> {
+                        if (pendingList != null) { result.error("busy", "busy", null); return@setMethodCallHandler }
+                        if (hasAudioPermission()) {
+                            loadSounds(result, true)
+                        } else {
+                            pendingList = result
+                            requestPermissions(arrayOf(audioPermission()), rcPerm)
+                        }
                     }
+                    "preview" -> {
+                        val uri = call.argument<String>("uri")
+                        if (uri == null) { result.success(null); return@setMethodCallHandler }
+                        try { startPreview(uri); result.success(true) }
+                        catch (e: Exception) { stopPreview(); result.error("fail", e.message, null) }
+                    }
+                    "stopPreview" -> { stopPreview(); result.success(null) }
                     "pickFile" -> {
-                        if (pending != null) { result.error("busy", "busy", null); return@setMethodCallHandler }
-                        pending = result
+                        if (pendingFile != null) { result.error("busy", "busy", null); return@setMethodCallHandler }
+                        pendingFile = result
                         val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
                         i.addCategory(Intent.CATEGORY_OPENABLE)
                         i.type = "audio/*"
@@ -99,30 +115,101 @@ class MainActivity : FlutterActivity() {
             }
     }
 
+    private fun audioPermission(): String =
+        if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO
+        else Manifest.permission.READ_EXTERNAL_STORAGE
+
+    private fun hasAudioPermission(): Boolean =
+        checkSelfPermission(audioPermission()) == PackageManager.PERMISSION_GRANTED
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == rcPerm) {
+            val r = pendingList
+            pendingList = null
+            if (r != null) loadSounds(r, grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        }
+    }
+
+    // نغمات النظام + الأغاني اللي على الموبايل
+    private fun loadSounds(result: MethodChannel.Result, withMusic: Boolean) {
+        Thread {
+            val tones = ArrayList<Map<String, String>>()
+            val music = ArrayList<Map<String, String>>()
+            try {
+                val rm = RingtoneManager(this)
+                rm.setType(RingtoneManager.TYPE_ALARM or RingtoneManager.TYPE_RINGTONE or RingtoneManager.TYPE_NOTIFICATION)
+                val c = rm.cursor
+                val seen = HashSet<String>()
+                while (c.moveToNext()) {
+                    val uri = rm.getRingtoneUri(c.position).toString()
+                    if (seen.add(uri)) {
+                        tones.add(mapOf("uri" to uri, "title" to (c.getString(RingtoneManager.TITLE_COLUMN_INDEX) ?: "نغمة")))
+                    }
+                }
+            } catch (e: Exception) {}
+            if (withMusic) {
+                try {
+                    val base = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                    val proj = arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST)
+                    contentResolver.query(base, proj, MediaStore.Audio.Media.IS_MUSIC + " != 0", null,
+                        MediaStore.Audio.Media.TITLE + " COLLATE NOCASE ASC")?.use { c ->
+                        while (c.moveToNext()) {
+                            val id = c.getLong(0)
+                            val title = c.getString(1) ?: "بدون اسم"
+                            var artist = c.getString(2) ?: ""
+                            if (artist == "<unknown>") artist = ""
+                            music.add(mapOf("uri" to ContentUris.withAppendedId(base, id).toString(),
+                                "title" to title, "artist" to artist))
+                        }
+                    }
+                } catch (e: Exception) {}
+            }
+            runOnUiThread {
+                result.success(mapOf("tones" to tones, "music" to music, "musicAllowed" to withMusic))
+            }
+        }.start()
+    }
+
+    private fun startPreview(uri: String) {
+        stopPreview()
+        val mp = MediaPlayer()
+        mp.setAudioAttributes(AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+        mp.setDataSource(this, Uri.parse(uri))
+        mp.setOnPreparedListener { it.start() }
+        mp.setOnCompletionListener { stopPreview() }
+        mp.setOnErrorListener { _, _, _ -> stopPreview(); true }
+        mp.prepareAsync()
+        player = mp
+        handler.postDelayed({ stopPreview() }, 10000)
+    }
+
+    private fun stopPreview() {
+        handler.removeCallbacksAndMessages(null)
+        val p = player
+        player = null
+        if (p != null) {
+            try { p.stop() } catch (e: Exception) {}
+            try { p.release() } catch (e: Exception) {}
+        }
+    }
+
+    override fun onDestroy() {
+        stopPreview()
+        super.onDestroy()
+    }
+
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != rcRingtone && requestCode != rcFile) return
-        val r = pending
-        pending = null
+        if (requestCode != rcFile) return
+        val r = pendingFile
+        pendingFile = null
         if (r == null) return
-        if (resultCode != Activity.RESULT_OK || data == null) { r.success(null); return }
-        if (requestCode == rcRingtone) {
-            try {
-                val uri: Uri? = if (Build.VERSION.SDK_INT >= 33)
-                    data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-                else data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-                if (uri == null) {
-                    r.success(mapOf<String, String?>("uri" to null, "title" to "الافتراضي"))
-                } else {
-                    val title = try { RingtoneManager.getRingtone(this, uri)?.getTitle(this) } catch (e: Exception) { null }
-                    r.success(mapOf<String, String?>("uri" to uri.toString(), "title" to (title ?: "نغمة")))
-                }
-            } catch (e: Exception) { r.error("fail", e.message, null) }
-            return
-        }
-        val src = data.data
-        if (src == null) { r.success(null); return }
+        val src = data?.data
+        if (resultCode != Activity.RESULT_OK || src == null) { r.success(null); return }
         Thread {
             try {
                 val name = displayName(src)
@@ -145,7 +232,7 @@ class MainActivity : FlutterActivity() {
         return name
     }
 
-    // نظام الإشعارات لازم يقدر يقرأ الملف، فبننسخه لمجلد المنبهات (أندرويد 10+)
+    // ملف من مدير الملفات: بننسخه لمجلد المنبهات عشان نظام الإشعارات يقدر يقرأه (أندرويد 10+)
     private fun makeReadable(src: Uri, name: String): Uri {
         if (Build.VERSION.SDK_INT >= 29) {
             val prefs = getSharedPreferences("bua_sound", MODE_PRIVATE)

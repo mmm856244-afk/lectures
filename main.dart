@@ -904,6 +904,280 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+// ---------------- اختيار نغمة المنبه (شاشة واحدة) ----------------
+class SoundPickerPage extends StatefulWidget {
+  const SoundPickerPage({super.key});
+  @override
+  State<SoundPickerPage> createState() => _SoundPickerPageState();
+}
+
+class _SoundPickerPageState extends State<SoundPickerPage> {
+  static const MethodChannel _ch = MethodChannel('bua/sound');
+  List<Map<String, String>> tones = [];
+  List<Map<String, String>> music = [];
+  bool loading = true;
+  bool musicAllowed = true;
+  bool _busy = false;
+  String? playing; // الصوت اللي بيتسمع كمعاينة
+  String query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _ch.invokeMethod('stopPreview').catchError((_) {});
+    super.dispose();
+  }
+
+  List<Map<String, String>> _conv(dynamic l) => ((l as List?) ?? const [])
+      .map((e) => Map<String, String>.from(e as Map))
+      .toList();
+
+  Future<void> _load() async {
+    setState(() => loading = true);
+    try {
+      final r = await _ch.invokeMethod<Map>('listSounds');
+      if (!mounted) return;
+      setState(() {
+        tones = _conv(r?['tones']);
+        music = _conv(r?['music']);
+        musicAllowed = (r?['musicAllowed'] as bool?) ?? false;
+        loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  // الاختيار بيتفعل على طول وبترجع للإعدادات
+  Future<void> _select(String? uri, String title) async {
+    if (_busy) return;
+    _busy = true;
+    _ch.invokeMethod('stopPreview').catchError((_) {});
+    setState(() {
+      AppSettings.soundUri = uri;
+      AppSettings.soundTitle = title;
+      AppSettings.chan += 1; // قناة جديدة عشان الصوت الجديد يتطبق
+      playing = null;
+    });
+    await AppSettings.save();
+    scheduleAll();
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (mounted) Navigator.pop(context, true);
+  }
+
+  Future<void> _preview(String uri) async {
+    if (playing == uri) {
+      _ch.invokeMethod('stopPreview').catchError((_) {});
+      setState(() => playing = null);
+      return;
+    }
+    setState(() => playing = uri);
+    try {
+      await _ch.invokeMethod('preview', {'uri': uri});
+    } catch (_) {
+      if (mounted) setState(() => playing = null);
+      return;
+    }
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && playing == uri) setState(() => playing = null);
+    });
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final r = await _ch.invokeMethod<Map>('pickFile');
+      if (r == null) return;
+      await _select(r['uri'] as String?, (r['title'] as String?) ?? 'صوت مخصص');
+    } catch (_) {}
+  }
+
+  Widget _row(String? uri, String title,
+      {String sub = '', required IconData icon}) {
+    final sel = AppSettings.soundUri == uri;
+    return GestureDetector(
+      onTap: () => _select(uri, title),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: sel
+              ? const LinearGradient(colors: [kNavyDark, kNavy])
+              : const LinearGradient(
+                  colors: [Colors.white, Color(0xFFE4EBF8)]),
+          boxShadow: [
+            BoxShadow(
+                color: kNavy.withOpacity(0.12),
+                blurRadius: 10,
+                offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: sel ? Colors.white24 : kLecture,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: sel ? Colors.white : kNavy),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: sel ? Colors.white : kNavyDark)),
+                  if (sub.isNotEmpty)
+                    Text(sub,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: sel ? Colors.white70 : Colors.black54)),
+                ],
+              ),
+            ),
+            if (uri != null)
+              IconButton(
+                onPressed: () => _preview(uri),
+                icon: Icon(
+                    playing == uri
+                        ? Icons.stop_circle_outlined
+                        : Icons.play_circle_outline,
+                    size: 30,
+                    color: sel ? Colors.white : kNavy),
+              ),
+            if (sel) const Icon(Icons.check_circle, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _label(String t) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 6),
+        child: Text(t,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: kNavy)),
+      );
+
+  bool _match(Map<String, String> e) {
+    if (query.isEmpty) return true;
+    final q = query.toLowerCase();
+    return (e['title'] ?? '').toLowerCase().contains(q) ||
+        (e['artist'] ?? '').toLowerCase().contains(q);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    if (query.isEmpty) {
+      rows.add(_row(null, 'الافتراضي', icon: Icons.notifications));
+    }
+    final t = tones.where(_match).toList();
+    final m = music.where(_match).toList();
+    if (t.isNotEmpty) {
+      rows.add(_label('نغمات الموبايل'));
+      for (final e in t) {
+        rows.add(_row(e['uri'], e['title'] ?? 'نغمة', icon: Icons.music_note));
+      }
+    }
+    if (m.isNotEmpty) {
+      rows.add(_label('الأغاني اللي على الموبايل'));
+      for (final e in m) {
+        rows.add(_row(e['uri'], e['title'] ?? '',
+            sub: e['artist'] ?? '', icon: Icons.library_music));
+      }
+    }
+    if (!musicAllowed) {
+      rows.add(_label('الأغاني'));
+      rows.add(Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(18)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+                'عشان تظهر الأغاني لازم تسمح للتطبيق يوصل للصوتيات. لو الطلب مش بيظهر، افتح إعدادات التطبيق من الموبايل واسمح بالوصول للموسيقى والصوتيات.'),
+            const SizedBox(height: 8),
+            FilledButton(onPressed: _load, child: const Text('السماح بالأغاني')),
+          ],
+        ),
+      ));
+    }
+    if (query.isEmpty && !loading) {
+      rows.add(_label('مش لاقي أغنيتك؟'));
+      rows.add(GestureDetector(
+        onTap: _pickFile,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+              color: Colors.white, borderRadius: BorderRadius.circular(18)),
+          child: Row(children: const [
+            Icon(Icons.folder_open, color: kNavy),
+            SizedBox(width: 12),
+            Text('دوّر في الملفات', style: TextStyle(fontSize: 16)),
+          ]),
+        ),
+      ));
+    }
+    rows.add(const SizedBox(height: 20));
+
+    return Scaffold(
+      body: Container(
+        decoration: kPageBg,
+        child: Column(
+          children: [
+            pageHeader(context, 'نغمة المنبه'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: TextField(
+                onChanged: (v) => setState(() => query = v.trim()),
+                decoration: InputDecoration(
+                  hintText: 'ابحث عن نغمة أو أغنية',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none),
+                ),
+              ),
+            ),
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 4),
+                      itemCount: rows.length,
+                      itemBuilder: (_, i) => rows[i],
+                    ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: bottomBar(context),
+    );
+  }
+}
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
   @override
@@ -911,86 +1185,10 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  static const MethodChannel _ch = MethodChannel('bua/sound');
-
-  void _msg(String t) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(t)));
-  }
-
-  Future<void> _applySound(String? uri, String title) async {
-    setState(() {
-      AppSettings.soundUri = uri;
-      AppSettings.soundTitle = title;
-      AppSettings.chan += 1; // قناة جديدة عشان الصوت الجديد يتطبق
-    });
-    await AppSettings.save();
-    scheduleAll();
-  }
-
-  Future<void> _pickNative(String method) async {
-    try {
-      final r = await _ch.invokeMethod<Map>(method, {
-        'current': AppSettings.soundUri,
-      });
-      if (r == null) return; // المستخدم لغى
-      final uri = r['uri'] as String?;
-      final title = (r['title'] as String?) ?? 'صوت مخصص';
-      await _applySound(uri, uri == null ? 'الافتراضي' : title);
-    } catch (_) {
-      _msg('معرفتش أفتح الاختيار، جرب تاني');
-    }
-  }
-
-  Future<void> _soundSheet() async {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: Text('صوت المنبه',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              ListTile(
-                leading: const Icon(Icons.notifications, color: kNavy),
-                title: const Text('الصوت الافتراضي'),
-                onTap: () => Navigator.pop(ctx, 'default'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.music_note, color: kNavy),
-                title: const Text('نغمات الموبايل'),
-                onTap: () => Navigator.pop(ctx, 'ringtone'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.audio_file, color: kNavy),
-                title: const Text('أغنية أو ملف صوت من الموبايل'),
-                subtitle: const Text('اختار أي ملف صوت نازل عندك'),
-                onTap: () => Navigator.pop(ctx, 'file'),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (choice == 'default') {
-      await _applySound(null, 'الافتراضي');
-    } else if (choice == 'ringtone') {
-      await _pickNative('pickRingtone');
-    } else if (choice == 'file') {
-      await _pickNative('pickFile');
-    }
+  Future<void> _openSounds() async {
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const SoundPickerPage()));
+    if (mounted) setState(() {});
   }
 
   Future<void> _setVibrate(bool v) async {
@@ -1059,7 +1257,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('صوت المنبه'),
                     subtitle: Text(AppSettings.soundTitle),
                     trailing: const Icon(Icons.chevron_left),
-                    onTap: _soundSheet,
+                    onTap: _openSounds,
                   )),
                   _box(SwitchListTile(
                     secondary: const Icon(Icons.vibration, color: kNavy),
