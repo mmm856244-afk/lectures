@@ -913,7 +913,6 @@ class SoundPickerPage extends StatefulWidget {
 
 class _SoundPickerPageState extends State<SoundPickerPage> {
   static const MethodChannel _ch = MethodChannel('bua/sound');
-  List<Map<String, String>> tones = [];
   List<Map<String, String>> music = [];
   bool loading = true;
   bool musicAllowed = true;
@@ -943,7 +942,6 @@ class _SoundPickerPageState extends State<SoundPickerPage> {
       final r = await _ch.invokeMethod<Map>('listSounds');
       if (!mounted) return;
       setState(() {
-        tones = _conv(r?['tones']);
         music = _conv(r?['music']);
         musicAllowed = (r?['musicAllowed'] as bool?) ?? false;
         loading = false;
@@ -986,6 +984,15 @@ class _SoundPickerPageState extends State<SoundPickerPage> {
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted && playing == uri) setState(() => playing = null);
     });
+  }
+
+  Future<void> _pickSystemTone() async {
+    try {
+      final r = await _ch.invokeMethod<Map>(
+          'pickSystemTone', {'current': AppSettings.soundUri});
+      if (r == null) return;
+      await _select(r['uri'] as String?, (r['title'] as String?) ?? 'نغمة النظام');
+    } catch (_) {}
   }
 
   Future<void> _pickFile() async {
@@ -1085,25 +1092,74 @@ class _SoundPickerPageState extends State<SoundPickerPage> {
   Widget build(BuildContext context) {
     final rows = <Widget>[];
     if (query.isEmpty) {
-      rows.add(_row(null, 'الافتراضي', icon: Icons.notifications));
+      final su = AppSettings.soundUri;
+      final sysSel = su == null || su.contains('/internal/');
+      rows.add(GestureDetector(
+        onTap: _pickSystemTone,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: sysSel
+                ? const LinearGradient(colors: [kNavyDark, kNavy])
+                : const LinearGradient(
+                    colors: [Colors.white, Color(0xFFE4EBF8)]),
+            boxShadow: [
+              BoxShadow(
+                  color: kNavy.withOpacity(0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: sysSel ? Colors.white24 : kLecture,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(Icons.notifications,
+                    color: sysSel ? Colors.white : kNavy),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('نغمات النظام الافتراضية',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: sysSel ? Colors.white : kNavyDark)),
+                    if (sysSel)
+                      Text(AppSettings.soundTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.white70)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_left,
+                  color: sysSel ? Colors.white : kNavy),
+            ],
+          ),
+        ),
+      ));
     }
-    final t = tones.where(_match).toList();
     final m = music.where(_match).toList();
-    if (t.isNotEmpty) {
-      rows.add(_label('نغمات الموبايل'));
-      for (final e in t) {
-        rows.add(_row(e['uri'], e['title'] ?? 'نغمة', icon: Icons.music_note));
-      }
-    }
     if (m.isNotEmpty) {
-      rows.add(_label('الأغاني اللي على الموبايل'));
+      rows.add(_label('الموسيقى والنغمات اللي على الموبايل'));
       for (final e in m) {
         rows.add(_row(e['uri'], e['title'] ?? '',
-            sub: e['artist'] ?? '', icon: Icons.library_music));
+            sub: e['artist'] ?? '', icon: Icons.music_note));
       }
     }
     if (!musicAllowed) {
-      rows.add(_label('الأغاني'));
+      rows.add(_label('الموسيقى والنغمات'));
       rows.add(Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         padding: const EdgeInsets.all(14),
@@ -1113,7 +1169,7 @@ class _SoundPickerPageState extends State<SoundPickerPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-                'عشان تظهر الأغاني لازم تسمح للتطبيق يوصل للصوتيات. لو الطلب مش بيظهر، افتح إعدادات التطبيق من الموبايل واسمح بالوصول للموسيقى والصوتيات.'),
+                'عشان تظهر الموسيقى والنغمات اللي على الموبايل لازم تسمح للتطبيق يوصل للصوتيات. لو الطلب مش بيظهر، افتح إعدادات التطبيق من الموبايل واسمح بالوصول للموسيقى والصوتيات.'),
             const SizedBox(height: 8),
             FilledButton(onPressed: _load, child: const Text('السماح بالأغاني')),
           ],

@@ -75,6 +75,8 @@ class MainActivity : FlutterActivity() {
     private val channelName = "bua/sound"
     private val rcFile = 7102
     private val rcPerm = 7103
+    private val rcTone = 7104
+    private var pendingTone: MethodChannel.Result? = null
     private var pendingFile: MethodChannel.Result? = null
     private var pendingList: MethodChannel.Result? = null
     private var player: MediaPlayer? = null
@@ -101,12 +103,27 @@ class MainActivity : FlutterActivity() {
                         catch (e: Exception) { stopPreview(); result.error("fail", e.message, null) }
                     }
                     "stopPreview" -> { stopPreview(); result.success(null) }
+                    "pickSystemTone" -> {
+                        if (pendingTone != null) { result.error("busy", "busy", null); return@setMethodCallHandler }
+                        pendingTone = result
+                        val i = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                        i.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM or RingtoneManager.TYPE_RINGTONE or RingtoneManager.TYPE_NOTIFICATION)
+                        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                        i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                        i.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "نغمات النظام")
+                        val cur = call.argument<String>("current")
+                        if (cur != null && cur.contains("/internal/")) {
+                            i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(cur))
+                        }
+                        startActivityForResult(i, rcTone)
+                    }
                     "pickFile" -> {
                         if (pendingFile != null) { result.error("busy", "busy", null); return@setMethodCallHandler }
                         pendingFile = result
                         val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
                         i.addCategory(Intent.CATEGORY_OPENABLE)
                         i.type = "audio/*"
+                        i.putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("audio/*"))
                         i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                         startActivityForResult(i, rcFile)
                     }
@@ -131,28 +148,15 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // نغمات النظام + الأغاني اللي على الموبايل
+    // الملفات الصوتية اللي على الموبايل (موسيقى + نغمات نازلة) - من غير نغمات النظام
     private fun loadSounds(result: MethodChannel.Result, withMusic: Boolean) {
         Thread {
-            val tones = ArrayList<Map<String, String>>()
             val music = ArrayList<Map<String, String>>()
-            try {
-                val rm = RingtoneManager(this)
-                rm.setType(RingtoneManager.TYPE_ALARM or RingtoneManager.TYPE_RINGTONE or RingtoneManager.TYPE_NOTIFICATION)
-                val c = rm.cursor
-                val seen = HashSet<String>()
-                while (c.moveToNext()) {
-                    val uri = rm.getRingtoneUri(c.position).toString()
-                    if (seen.add(uri)) {
-                        tones.add(mapOf("uri" to uri, "title" to (c.getString(RingtoneManager.TITLE_COLUMN_INDEX) ?: "نغمة")))
-                    }
-                }
-            } catch (e: Exception) {}
             if (withMusic) {
                 try {
                     val base = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
                     val proj = arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST)
-                    contentResolver.query(base, proj, MediaStore.Audio.Media.IS_MUSIC + " != 0", null,
+                    contentResolver.query(base, proj, MediaStore.Audio.Media.DURATION + " > 0", null,
                         MediaStore.Audio.Media.TITLE + " COLLATE NOCASE ASC")?.use { c ->
                         while (c.moveToNext()) {
                             val id = c.getLong(0)
@@ -166,7 +170,7 @@ class MainActivity : FlutterActivity() {
                 } catch (e: Exception) {}
             }
             runOnUiThread {
-                result.success(mapOf("tones" to tones, "music" to music, "musicAllowed" to withMusic))
+                result.success(mapOf("music" to music, "musicAllowed" to withMusic))
             }
         }.start()
     }
@@ -204,6 +208,24 @@ class MainActivity : FlutterActivity() {
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == rcTone) {
+            val tr = pendingTone
+            pendingTone = null
+            if (tr == null) return
+            val picked: Uri? = if (resultCode == Activity.RESULT_OK && data != null)
+                data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI) else null
+            if (picked == null) { tr.success(null); return }
+            val s = picked.toString()
+            val isDefault = s.startsWith("content://settings/")
+            var title = "نغمة النظام"
+            try { title = RingtoneManager.getRingtone(this, picked).getTitle(this) } catch (e: Exception) {}
+            if (isDefault) {
+                tr.success(mapOf<String, String?>("uri" to null, "title" to "الافتراضي"))
+            } else {
+                tr.success(mapOf<String, String?>("uri" to s, "title" to title))
+            }
+            return
+        }
         if (requestCode != rcFile) return
         val r = pendingFile
         pendingFile = null
