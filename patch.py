@@ -1,4 +1,12 @@
 import os
+import shutil
+import subprocess
+
+# 0) صورة الهيدر + شعار التطبيق
+os.makedirs('assets', exist_ok=True)
+shutil.copy('header.jpg', 'assets/header.jpg')
+subprocess.run(['flutter', 'pub', 'get'], check=True)
+subprocess.run(['dart', 'run', 'flutter_launcher_icons'], check=True)
 
 # 1) صلاحيات وإعدادات الإشعارات في ملف AndroidManifest
 p = 'android/app/src/main/AndroidManifest.xml'
