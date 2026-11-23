@@ -309,9 +309,21 @@ String channelId() => 'bua_alarm_${AppSettings.chan}';
 Int64List vibrationPattern() =>
     Int64List.fromList(<int>[0, 900, 450, 900, 450, 900, 450, 900]);
 
+const MethodChannel sysCh = MethodChannel('bua/sound');
+
 Future<void> initNotifications() async {
   tzdata.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('Africa/Cairo'));
+  // بنستخدم توقيت الموبايل نفسه عشان المنبه يرن في الميعاد الصح
+  var zone = 'Africa/Cairo';
+  try {
+    final z = await sysCh.invokeMethod<String>('timezone');
+    if (z != null && z.isNotEmpty) zone = z;
+  } catch (_) {}
+  try {
+    tz.setLocalLocation(tz.getLocation(zone));
+  } catch (_) {
+    tz.setLocalLocation(tz.getLocation('Africa/Cairo'));
+  }
   const init = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'));
   await plugin.initialize(init);
@@ -361,6 +373,14 @@ tz.TZDateTime nextTime(Item it) {
   return d;
 }
 
+// حالة ضبط المنبهات (بتظهر في الإعدادات عشان تتأكد إنها اتضبطت)
+class ScheduleStatus {
+  static int count = 0; // عدد المنبهات اللي اتضبطت فعلًا
+  static int expected = 0; // عدد المواعيد المفروض تتضبط
+  static String? error; // آخر خطأ لو حصل
+  static String? next; // أقرب منبه
+}
+
 // بنرتب عمليات ضبط المنبهات ورا بعض عشان ما تتخانقش مع بعض
 Future<void> _lastSchedule = Future<void>.value();
 Future<void> scheduleAll() {
@@ -370,24 +390,32 @@ Future<void> scheduleAll() {
 }
 
 Future<void> _scheduleAllNow() async {
-  await plugin.cancelAll();
-  await androidImpl()?.createNotificationChannel(AndroidNotificationChannel(
-    channelId(),
-    'تنبيهات المحاضرات',
-    description: 'منبه قبل المحاضرة أو السكشن بخمس دقايق',
-    importance: Importance.max,
-    playSound: true,
-    sound: currentSound(),
-    enableVibration: AppSettings.vibrate,
-    vibrationPattern: AppSettings.vibrate ? vibrationPattern() : null,
-    audioAttributesUsage: AudioAttributesUsage.alarm,
-  ));
+  ScheduleStatus.error = null;
+  try {
+    await plugin.cancelAll();
+    await androidImpl()?.createNotificationChannel(AndroidNotificationChannel(
+      channelId(),
+      'تنبيهات المحاضرات',
+      description: 'منبه قبل المحاضرة أو السكشن بخمس دقايق',
+      importance: Importance.max,
+      playSound: true,
+      sound: currentSound(),
+      enableVibration: AppSettings.vibrate,
+      vibrationPattern: AppSettings.vibrate ? vibrationPattern() : null,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+    ));
+  } catch (e) {
+    ScheduleStatus.error = 'تجهيز الإشعارات: $e';
+  }
   final list = items;
+  ScheduleStatus.expected = list.length;
+  tz.TZDateTime? soonest;
+  String? soonestText;
   for (var i = 0; i < list.length; i++) {
     final it = list[i];
     final kind = it.lecture ? 'محاضرة' : 'سكشن';
     final title = '$kind ${it.course} بعد 5 دقايق';
-    final body = '${it.person} • القاعة ${it.room} • ${fmt(it.sh, it.sm)}';
+    final body = 'القاعة ${it.room} • ${fmt(it.sh, it.sm)} • ${it.person}';
     final when = nextTime(it);
     Future<void> go(AndroidScheduleMode mode) => plugin.zonedSchedule(
           i,
@@ -400,24 +428,35 @@ Future<void> _scheduleAllNow() async {
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         );
-    try {
-      await go(AndroidScheduleMode.exactAllowWhileIdle);
-    } catch (_) {
-      await go(AndroidScheduleMode.inexactAllowWhileIdle);
+    var ok = false;
+    // alarmClock: أضمن وضع، بيصحّي الموبايل حتى في توفير الطاقة
+    for (final mode in <AndroidScheduleMode>[
+      AndroidScheduleMode.alarmClock,
+      AndroidScheduleMode.exactAllowWhileIdle,
+      AndroidScheduleMode.inexactAllowWhileIdle,
+    ]) {
+      try {
+        await go(mode);
+        ok = true;
+        break;
+      } catch (e) {
+        ScheduleStatus.error = '$e';
+      }
+    }
+    if (ok && (soonest == null || when.isBefore(soonest))) {
+      soonest = when;
+      soonestText =
+          '${it.course} • ${dayNames[it.day]} ${fmt(it.sh, it.sm)} • ${it.room}';
     }
   }
-}
-
-Future<void> testNotification() async {
-  final list = items;
-  final it = list.isNotEmpty ? list.first : null;
-  final body = it == null
-      ? 'د. نبيل • القاعة AI101 • 9:00 ص'
-      : '${it.person} • القاعة ${it.room} • ${fmt(it.sh, it.sm)}';
-  final title = it == null
-      ? 'تجربة: محاضرة بعد 5 دقايق'
-      : 'تجربة: ${it.course} بعد 5 دقايق';
-  await plugin.show(999, title, body, buildDetails(body));
+  try {
+    final pending = await plugin.pendingNotificationRequests();
+    ScheduleStatus.count = pending.where((p) => p.id < 900).length;
+  } catch (_) {
+    ScheduleStatus.count = 0;
+  }
+  if (ScheduleStatus.count >= list.length) ScheduleStatus.error = null;
+  ScheduleStatus.next = soonestText;
 }
 
 // ---------------- الواجهة ----------------
@@ -469,7 +508,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'جدول BUA',
+      title: 'Timetable AI',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: kNavy),
       builder: (context, child) =>
           Directionality(textDirection: TextDirection.rtl, child: child!),
@@ -687,7 +726,8 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('جدول BUA',
+                const Text('Timetable AI',
+                    textDirection: TextDirection.ltr,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 36,
@@ -1241,6 +1281,55 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  bool _batteryOk = true;
+  bool _checking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  // بيراجع حالة المنبهات وإعدادات البطارية
+  Future<void> _refresh() async {
+    try {
+      _batteryOk = (await sysCh.invokeMethod<bool>('batteryIgnored')) ?? true;
+    } catch (_) {}
+    if (mounted) setState(() => _checking = true);
+    await scheduleAll();
+    if (mounted) setState(() => _checking = false);
+  }
+
+  Widget _statusTile() {
+    final ok = !_checking &&
+        ScheduleStatus.expected > 0 &&
+        ScheduleStatus.count >= ScheduleStatus.expected;
+    final title = _checking
+        ? 'جاري ضبط المنبهات...'
+        : ok
+            ? 'المنبهات شغالة (${ScheduleStatus.count} منبه)'
+            : 'المنبهات مش متضبطة كلها (${ScheduleStatus.count} من ${ScheduleStatus.expected})';
+    final lines = <String>[
+      if (ok && ScheduleStatus.next != null) 'أقرب منبه: ${ScheduleStatus.next}',
+      if (!_checking && ScheduleStatus.error != null)
+        'السبب: ${ScheduleStatus.error}',
+    ];
+    return ListTile(
+      leading: _checking
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2.5))
+          : Icon(ok ? Icons.alarm_on : Icons.alarm_off,
+              color: ok ? Colors.green : Colors.red),
+      title: Text(title),
+      subtitle: lines.isEmpty ? null : Text(lines.join('\n')),
+      isThreeLine: lines.length > 1,
+      trailing: IconButton(
+          onPressed: _refresh, icon: const Icon(Icons.refresh, color: kNavy)),
+    );
+  }
+
   Future<void> _openSounds() async {
     await Navigator.push(context,
         MaterialPageRoute(builder: (_) => const SoundPickerPage()));
@@ -1321,14 +1410,24 @@ class _SettingsPageState extends State<SettingsPage> {
                     value: AppSettings.vibrate,
                     onChanged: _setVibrate,
                   )),
+                  _box(_statusTile()),
                   _box(ListTile(
-                    leading:
-                        const Icon(Icons.notifications_active, color: kNavy),
-                    title: const Text('تجربة المنبه دلوقتي'),
-                    onTap: () async {
-                      await askPermissions();
-                      await testNotification();
-                    },
+                    leading: Icon(Icons.battery_charging_full,
+                        color: _batteryOk ? Colors.green : Colors.orange),
+                    title: const Text('السماح بالعمل في الخلفية'),
+                    subtitle: Text(_batteryOk
+                        ? 'تمام، الموبايل مش هيوقف المنبه'
+                        : 'مهم: اضغط واسمح عشان المنبه يشتغل والتطبيق مقفول'),
+                    trailing: _batteryOk ? null : const Icon(Icons.chevron_left),
+                    onTap: _batteryOk
+                        ? null
+                        : () async {
+                            try {
+                              await sysCh.invokeMethod('requestBattery');
+                            } catch (_) {}
+                            await Future.delayed(const Duration(seconds: 1));
+                            _refresh();
+                          },
                   )),
                   _box(Padding(
                     padding: const EdgeInsets.all(16),

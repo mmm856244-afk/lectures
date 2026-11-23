@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 
@@ -16,6 +17,7 @@ perms = '''<uses-permission android:name="android.permission.POST_NOTIFICATIONS"
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     '''
@@ -46,6 +48,13 @@ for name in ['android/app/build.gradle', 'android/app/build.gradle.kts']:
     else:
         g = g.replace('compileOptions {', 'compileOptions {\n        coreLibraryDesugaringEnabled true', 1)
         g += '\ndependencies {\n    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"\n}\n'
+    # R8/shrink بيكسر المنبهات المجدولة في نسخة release، فبنقفله
+    if name.endswith('.kts'):
+        g = re.sub(r'(buildTypes\s*\{\s*(?:getByName\("release"\)|release)\s*\{)',
+                   r'\1\n            isMinifyEnabled = false\n            isShrinkResources = false', g, count=1)
+    else:
+        g = re.sub(r'(buildTypes\s*\{\s*release\s*\{)',
+                   r'\1\n            minifyEnabled false\n            shrinkResources false', g, count=1)
     open(name, 'w', encoding='utf-8').write(g)
 
 # 3) كود أندرويد لاختيار صوت المنبه (نغمات الموبايل + أي ملف صوت/أغنية)
@@ -126,6 +135,24 @@ class MainActivity : FlutterActivity() {
                         i.putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("audio/*"))
                         i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                         startActivityForResult(i, rcFile)
+                    }
+                    "timezone" -> result.success(java.util.TimeZone.getDefault().id)
+                    "batteryIgnored" -> {
+                        val pm = getSystemService(POWER_SERVICE) as android.os.PowerManager
+                        result.success(pm.isIgnoringBatteryOptimizations(packageName))
+                    }
+                    "requestBattery" -> {
+                        try {
+                            val i = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                            i.data = Uri.parse("package:" + packageName)
+                            startActivity(i)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            try {
+                                startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                result.success(true)
+                            } catch (e2: Exception) { result.success(false) }
+                        }
                     }
                     else -> result.notImplemented()
                 }
